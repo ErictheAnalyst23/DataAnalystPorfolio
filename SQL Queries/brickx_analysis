@@ -1,0 +1,132 @@
+/* The following queries is based on a personal project to examine my investments from the Brickx website. Brickx allows individual to make microinvestments
+into the Australian property market. */ 
+
+-- KPI1
+-- To aggregate the total dividends collected from each property on brickx 
+SELECT Property, Transaction_Type, SUM(Amount) as total_dividend
+FROM brickx1
+WHERE Transaction_Type LIKE "Distribution" 
+GROUP BY Property;
+-- KPI2
+-- To the total commision fees paid due to buying and selling for each property on brickx.
+SELECT Property, Transaction_Type, ABS(SUM(Amount)) as total_commission
+FROM brickx1
+WHERE Transaction_Type LIKE "Commission"
+GROUP BY Property;
+-- KPI3
+-- This query will calculate the total amount (money) invested into each property on brickx
+SELECT Property, Transaction_Type, ABS(SUM(Amount)) total_purchase_price
+FROM brickx1
+WHERE Transaction_Type LIKE "Trade" AND Process LIKE "Buy%"
+GROUP BY 1
+ORDER BY 1;
+-- KPI4
+-- This query will calculate the value of each property that was sold from brickx 
+SELECT Property, Transaction_Type, ABS(SUM(Amount)) total_sell_price
+FROM brickx1
+WHERE Transaction_Type LIKE "Trade" AND Process LIKE "Sell%"
+GROUP BY 1
+ORDER BY 1;
+-- KPI5
+-- The following query split the strings in the 'process' column
+-- This will allow us to find and aggregate the total brick(units) brought for each property
+SELECT property, Process, Substr(Process, 1, Instr(Process, ':')-1) as action_type,
+						  Substr(Process, 6, 1) as num_purchased,
+						  Substr(Process, Instr(Process, 'at')+4) as individual_purchase_price,
+						  SUM(Substr(Process, 6, 1)) total_bricks_purchased,
+						  SUM(Substr(Process, 6, 1))*Substr(Process, Instr(Process, 'at')+4) as total_purchase_price
+FROM brickx1
+WHERE process LIKE 'Buy%'
+GROUP BY Property;
+-- KPI6
+-- The following query will split the string components in the 'Process' column to obtain:
+---- The total number of bricks purchased, the total purchase price
+SELECT property, Process, Substr(Process, 1, Instr(Process, ':')-1) as action_type,
+						  Substr(Process, 6, 1) as num_purchased,
+						  Substr(Process, Instr(Process, 'at')+4) as individual_purchase_price,
+						  SUM(Substr(Process, 6, 1)) total_bricks_purchased,
+						  SUM(Substr(Process, 6, 1))*Substr(Process, Instr(Process, 'at')+4) as total_purchase_price
+FROM brickx1
+WHERE process LIKE 'Buy%'
+GROUP BY Property;
+-- KPI7
+-- TO IMPLEMENT: The following query will split the string components in the 'Process' column to obtain:
+---- The total number of bricks purchased, the total purchase price, avg_purchase_price
+SELECT property, Process, Substr(Process, 1, Instr(Process, ':')-1) as action_type,
+						  SUM(Substr(Process, 6, 1)) total_bricks_purchased,
+						  ABS(SUM(Amount)) total_purchase_price,
+						  ABS(SUM(Amount))/SUM(Substr(Process, 6, 1)) avg_purchase_price
+FROM brickx1
+WHERE process LIKE 'Buy%'
+GROUP BY Property;
+-- KPI8
+-- The following query will look at the total number of bricks sold and the average sell price
+SELECT property, Process, Substr(Process, 1, Instr(Process, ':')-1) as action_type,
+						  SUM(Substr(Process, 7, 2)) total_bricks_sold,
+						  ABS(SUM(Amount)) total_purchase_price,
+						  ABS(SUM(Amount))/SUM(Substr(Process, 7, 2)) avg_sold_price
+FROM brickx1
+WHERE process LIKE 'Sell%'
+GROUP BY Property;
+
+
+------------------------------
+/* The KPIs of the investment have been analysed. The following section with explore the investment in greater depth.
+Things such as dividend distribution per month, running dividend average, running total dividend, holding time for each property in brickx and more. */
+
+-- Checkpoint 1
+-- To explore the amount of dividends allocated each month, the running average of dividend distribution each month
+-- To explore the running dividend total collected from each property per month and running count of months held for each property in brickx
+-- As date-time was combined together in the original dataset, we only want the year-month-day of purchase
+SELECT Property, DATE(Date), Transaction_Type, Amount as dividend_month, AVG(Amount) OVER (PARTITION BY Property ORDER BY Date) as running_dividend_average,
+SUM(Amount) OVER (PARTITION BY Property ORDER BY date) as running_total_dividend,
+COUNT(amount) OVER (PARTITION BY property ORDER BY date) as months_in_portfolio
+FROM brickx1
+WHERE Transaction_Type LIKE "Distribution" 
+ORDER BY 1,2;
+
+
+-- Checkpoint 2 
+-- To explore the running total of investments placed into each property in brickx
+-- Multiple partition by -1 to obtain a positive value for each deposit
+SELECT Property, DATE(date) as date, Process, Transaction_Type, SUM(Amount * -1) OVER (PARTITION BY property ORDER BY date) as running_investment_property
+FROM brickx1
+WHERE Transaction_Type LIKE "Trade" AND Process LIKE "Buy%" 
+ORDER BY 1;
+
+-- Checkpoint 3
+-- Create a tempt table and conditional aggregates to explore how many times has the dividend per month been higher than the average rolling dividend
+With running_invest (Property, dates, Transaction_type, dividend_month, running_dividend_average, running_total_dividend, months_in_portfolio)
+as (
+SELECT Property, DATE(Date) as dates, Transaction_Type, Amount as dividend_month, AVG(Amount) OVER (PARTITION BY Property ORDER BY Date) as running_dividend_average,
+SUM(Amount) OVER (PARTITION BY Property ORDER BY date) as running_total_dividend,
+COUNT(amount) OVER (PARTITION BY property ORDER BY date) as months_in_portfolio
+FROM brickx1
+WHERE Transaction_Type LIKE "Distribution" OR Transaction_Type LIKE "Buy%"
+ORDER BY 1,2)
+
+Select property, dates, dividend_month, running_dividend_average,
+	CASE 
+		WHEN running_dividend_average > dividend_month THEN 'Below than average'
+		WHEN running_dividend_average = dividend_month THEN 'Same as average'
+		WHEN running_dividend_average < dividend_month THEN 'Higher than average'
+		ELSE 'Unknown'
+	END AS dividend_tier, COUNT(*) as frequency
+FROM running_invest
+GROUP BY property, dividend_tier;
+
+-- Checkpoint 4
+-- Using the temp table to explore the running count of the purchases of units from each property
+With total_bricks (Property, dates, Process, action_type, num_purchased, individual_purchase_price)
+as (
+SELECT property, DATE(date) dates, Process, Substr(Process, 1, Instr(Process, ':')-1) as action_type,
+						  Substr(Process, 6, 1) as num_purchased,
+						  Substr(Process, Instr(Process, 'at')+4) as individual_purchase_price
+FROM brickx1
+WHERE process LIKE 'Buy%'
+ORDER BY 1,2)
+
+SELECT property, dates, SUM(num_purchased) OVER (PARTITION BY property ORDER BY dates) running_total_bricks_purchased
+FROM total_bricks;
+
+
