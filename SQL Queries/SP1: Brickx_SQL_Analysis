@@ -152,7 +152,9 @@ GROUP BY property, dividend_tier;
 
 
 -----
-/* End of query. Data was then transferred into excel to explore. */
+/* End of query. Data was then transferred into excel to explore. Data visualised in tableau:
+
+https://public.tableau.com/app/profile/eric.wong8260/viz/BrickxAnalysis/Dashboard1       */
 
 
 
