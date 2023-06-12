@@ -1,7 +1,7 @@
 # DataAnalystPorfolio
 A collection of selected projects to demonstrate my skills in data analytics and science, and exploring my areas of interest.
 
-There are four main projects:
+##There are four main projects:
 
 Project 1: COVID Vaccination Tracker
 
@@ -11,7 +11,7 @@ Project 3: BikeStore Dashboard
 
 Project 4: Python Project
 
-There is an additional folder of other projects that I have completed, sorted by programs used:
+##There is an additional folder of other projects that I have completed, sorted by programs used:
 
 Side Project 1: SQL
 
