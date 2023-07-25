@@ -7,9 +7,11 @@ The dataset was extracted from my personal transaction history using the microin
 
 # Steps Taken
 
-## Cleaning the data in SQLite
+### Cleaning the data in SQLite
+https://github.com/ErictheAnalyst23/DataAnalystPorfolio/blob/main/Project%202%3A%20Brickx%20Investment%20Analysis/1%3A%20Brickx_SQL_Analysis
 
-## Exploring the data using Python
+### Exploring the data using Python
+https://github.com/ErictheAnalyst23/DataAnalystPorfolio/blob/main/Project%202%3A%20Brickx%20Investment%20Analysis/2%3A%20Brickx_Python_Analysis.ipynb
 
-## Visualising the dataset using Tableau
+### Visualising the dataset using Tableau
 https://public.tableau.com/app/profile/eric.wong8260/viz/BrickxAnalysis/Dashboard1
