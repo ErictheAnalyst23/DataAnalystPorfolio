@@ -21,4 +21,4 @@ Side Project 3: Web Scrape
 
 Side Project 4: R
 
-Side Project 5: Excel
+Side Project 5: Excel and Power BI
