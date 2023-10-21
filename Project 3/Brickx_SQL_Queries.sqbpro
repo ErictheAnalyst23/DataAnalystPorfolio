@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="/home/ericwong/socials.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="989"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><table title="brickx1" custom_title="0" dock_id="1" table="4,7:mainbrickx1"/><dock_state state="000000ff00000000fd0000000100000002000004f3000003dffc0100000001fb000000160064006f0063006b00420072006f00770073006500310100000000000004f30000016701000007000003810000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings><table schema="main" name="brickx1" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort><column index="0" mode="1"/></sort><column_widths><column index="1" value="79"/><column index="3" value="111"/><column index="4" value="300"/><column index="5" value="74"/><column index="6" value="300"/><column index="7" value="140"/><column index="8" value="104"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats><column index="4" value=""/></display_formats><hidden_columns/><plot_y_axes/><global_filter/></table></browse_table_settings></tab_browse><tab_sql><sql name="brickx_analysis">/* The following queries is based on a personal project to examine my investments from the Brickx website. Brickx allows individual to make microinvestments
+into the Australian property market. */ 
+
+-- KPI1
+-- To aggregate the total dividends collected from each property on brickx
+-- To explore the total commission fees paid due to buying and selling for each property on brickx
+-- To calculate the total amount invested into each property on brickx
+-- To calculate the value of each property that was sold on brick 
+SELECT Property, ABS(SUM(CASE WHEN Transaction_type = 'Trade' AND Process LIKE 'Buy%' THEN Amount ELSE 0 END)) total_purchase_price,
+SUM(CASE WHEN Transaction_type = 'Distribution' THEN Amount ELSE 0 END) total_distribution,
+ABS(SUM(CASE WHEN Transaction_type = 'Commission' THEN Amount ELSE 0 END)) total_commission_fees,
+SUM(CASE WHEN Transaction_type = 'Trade' AND Process LIKE 'Sell%' THEN Amount ELSE 0 END) total_sell_price
+FROM brickx1
+GROUP BY 1
+ORDER BY 1;
+
+
+-- Checkpoint 1: Combined into a larger code in final analysis but helpful to visualise first
+-- The following query will split the string components in the 'Process' column to obtain:
+-- This will allow us to find and aggregate the total brick(units) brought for each property
+---- The total number of bricks purchased, the total purchase price
+SELECT property, Process, Substr(Process, 1, Instr(Process, ':')-1) as action_type,
+						  Substr(Process, 6, 1) as num_purchased,
+						  Substr(Process, Instr(Process, 'at')+4) as individual_purchase_price,
+						  SUM(Substr(Process, 6, 1)) total_bricks_purchased,
+						  SUM(Substr(Process, 6, 1))*Substr(Process, Instr(Process, 'at')+4) as total_purchase_price,
+FROM brickx1
+WHERE process LIKE 'Buy%'
+GROUP BY Property, Process;
+
+-- Checkpoint 2: Combined into a larger code for final analysis but helpful to visualise first
+-- The following query will look at the total number of bricks sold and the average sell price
+SELECT property, Process, Substr(Process, 1, Instr(Process, ':')-1) as action_type,
+						  SUM(Substr(Process, 7, 2)) total_bricks_sold,
+						  ABS(SUM(Amount)) total_purchase_price,
+						  ABS(SUM(Amount))/SUM(Substr(Process, 7, 2)) avg_sold_price
+FROM brickx1
+WHERE process LIKE 'Sell%'
+GROUP BY Property;
+
+-- KPI2
+-- Using code from checkpoint 1 and 2, the following was investigated
+-- The total units purchased, total units sold
+-- The total amount invested, the total monatary returns after selling units
+-- The average purchase price and average sell price of the units for each Property
+SELECT property, Process, Substr(Process, 1, Instr(Process, ':')-1) as action_type,
+						  Substr(Process, Instr(Process, 'at')+4) as individual_purchase_price,
+						  SUM(CASE WHEN process LIKE 'Buy%' THEN Substr(Process, 6, 1) ELSE 0 END) total_bricks_purchased,
+						  SUM(CASE WHEN process LIKE 'Buy%' THEN Substr(Process, 6, 1)*Substr(Process, Instr(Process, 'at')+4) ELSE 0 END) total_purchase_price,
+						  ABS(CASE WHEN process LIKE 'Buy%' THEN SUM(Amount)/SUM(Substr(Process, 6, 1)) ELSE 0 END) avg_purchase_price,
+						  SUM(CASE WHEN process LIKE 'Sell%' THEN Substr(Process, 7, 2) ELSE 0 END) total_bricks_sold,
+						  ABS(CASE WHEN process LIKE 'Sell%' THEN SUM(Amount) ELSE 0 END) total_sell_price,
+  						  ABS(CASE WHEN process LIKE 'Sell%' THEN SUM(Amount)/SUM(Substr(Process, 7, 2)) ELSE 0 END) avg_sold_price					  
+FROM brickx1
+WHERE Process LIKE 'Buy%' OR Process LIKE 'Sell%'
+GROUP BY Property, action_type;
+------------------------------
+/* With the relevant aggregates now measured, the following section with explore the investment in greater depth.
+Things such as dividend distribution per month, running dividend average, running total dividend, holding time for each property in brickx and more. */
+------------------------------
+-- Checkpoint 3 - Later implemented into KPI3
+-- To explore the amount of dividends allocated each month, the running average of dividend distribution each month
+-- To explore the running dividend total collected from each property per month and running count of months held for each property in brickx
+-- As date-time was combined together in the original dataset, we only want the year-month-day of purchase
+SELECT Property, DATE(Date), Transaction_Type, Amount as dividend_month, AVG(Amount) OVER (PARTITION BY Property ORDER BY Date) as running_dividend_average,
+SUM(Amount) OVER (PARTITION BY Property ORDER BY date) as running_total_dividend,
+COUNT(amount) OVER (PARTITION BY property ORDER BY date) as months_in_portfolio
+FROM brickx1
+WHERE Transaction_Type LIKE &quot;Distribution&quot; 
+ORDER BY 1,2;
+
+
+-- Checkpoint 4 - Later implemented into KPI3
+-- To explore the running total of investments placed into each property in brickx
+-- Multiple partition by -1 to obtain a positive value for each deposit
+SELECT Property, DATE(date) as date, Process, Transaction_Type, SUM(Amount * -1) OVER (PARTITION BY property ORDER BY date) as running_investment_property
+FROM brickx1
+WHERE Transaction_Type LIKE &quot;Trade&quot; AND Process LIKE &quot;Buy%&quot; 
+ORDER BY 1;
+
+-- Checkpoint 5 - Later implemented into KPI3
+-- Using the temp table to explore the running count of the purchases of units from each property
+With total_bricks (Property, dates, Process, action_type, num_purchased, individual_purchase_price)
+as (
+SELECT property, DATE(date) dates, Process, Substr(Process, 1, Instr(Process, ':')-1) as action_type,
+						  Substr(Process, 6, 1) as num_purchased,
+						  Substr(Process, Instr(Process, 'at')+4) as individual_purchase_price
+FROM brickx1
+WHERE process LIKE 'Buy%'
+ORDER BY 1,2)
+
+SELECT property, dates, SUM(num_purchased) OVER (PARTITION BY property ORDER BY dates) running_total_bricks_purchased
+FROM total_bricks;
+
+-- KPI3
+-- The following is a temp table that uses conditional aggregration to visualise the queries of checkpoint 3,4,5 into a single table
+-- This includes, the running total of dividend collected, units owned and units sold, and the running average dividend collected for each property.
+With aggregate_brickx (property, dates, transaction_type, Process, dividend_month, sold_brickx, brought_brickx, num_purchased) as 
+(
+SELECT Property, DATE(Date) dates, Transaction_Type, Process, CASE
+	WHEN Transaction_type = &quot;Distribution&quot; THEN Amount ELSE 0 END as dividend_month, 
+	CASE WHEN Transaction_type = &quot;Trade&quot; AND Process LIKE 'Sell%' THEN
+	Amount ELSE 0 END as sold_brickx,
+	CASE WHEN Transaction_type = &quot;Trade&quot; AND Process LIKE 'Buy%' THEN
+	ABS(Amount) ELSE 0 END as brought_brickx,
+	CASE WHEN Process LIKE 'Buy%' THEN Substr(Process, 6, 1) ELSE null END as num_purchased
+FROM brickx1
+WHERE property is not null AND Transaction_type LIKE 'Distribution' OR Transaction_Type LIKE 'Trade'
+ORDER BY 1,2)
+
+SELECT property, dates, dividend_month, 
+	CASE
+		WHEN Transaction_type = &quot;Distribution&quot; THEN ROUND(AVG(dividend_month) OVER (PARTITION BY Property ORDER BY transaction_type, dates), 4) ELSE null END as running_dividend_average,
+	CASE 
+		WHEN Transaction_type LIKE &quot;Distribution&quot; THEN COUNT(dividend_month) OVER (PARTITION BY Property ORDER BY transaction_type, dates) ELSE null END AS months_held,
+	CASE 
+		WHEN Transaction_type = &quot;Distribution&quot; THEN SUM(dividend_month) OVER (PARTITION BY Property ORDER BY transaction_type, dates) ELSE null END as running_total_dividend,
+	CASE 
+		WHEN Process LIKE &quot;Buy%&quot; THEN SUM(brought_brickx) OVER (PARTITION BY Property ORDER BY transaction_type, dates) ELSE null END as running_investment_property,
+	CASE 
+		WHEN Process LIKE &quot;Buy%&quot; THEN COUNT(num_purchased) OVER (PARTITION BY Property ORDER BY transaction_type, dates) ELSE null END as running_total_units_purchased,
+	CASE 
+		WHEN Process LIKE &quot;Sell%&quot; THEN SUM(sold_brickx) OVER (PARTITION BY Property ORDER BY transaction_type, dates) ELSE null END as running_sold_investment_property,
+	CASE 
+		WHEN Process LIKE &quot;Sell%&quot; THEN COUNT(num_purchased) OVER (PARTITION BY Property ORDER BY transaction_type, dates) ELSE null END as running_total_units_sold
+FROM aggregate_brickx
+GROUP BY 1,2
+ORDER BY 1,2;
+
+
+-- KPI4
+-- Another a temp table was created and conditional aggregates were used again to explore the frequency in which the dividend per month was higher than the rolling average for each property
+With running_invest (Property, dates, Transaction_type, dividend_month, running_dividend_average, running_total_dividend, months_in_portfolio)
+as (
+SELECT Property, DATE(Date) as dates, Transaction_Type, Amount as dividend_month, AVG(Amount) OVER (PARTITION BY Property ORDER BY Date) as running_dividend_average,
+SUM(Amount) OVER (PARTITION BY Property ORDER BY date) as running_total_dividend,
+COUNT(amount) OVER (PARTITION BY property ORDER BY date) as months_in_portfolio
+FROM brickx1
+WHERE Transaction_Type LIKE &quot;Distribution&quot; OR Transaction_Type LIKE &quot;Buy%&quot;
+ORDER BY 1,2)
+
+Select property, dates, dividend_month, running_dividend_average,
+	CASE 
+		WHEN running_dividend_average &gt; dividend_month THEN 'Below than average'
+		WHEN running_dividend_average = dividend_month THEN 'Same as average'
+		WHEN running_dividend_average &lt; dividend_month THEN 'Higher than average'
+		ELSE 'Unknown'
+	END AS dividend_tier, COUNT(*) as frequency
+FROM running_invest
+GROUP BY property, dividend_tier;
+
+
+
+-----
+/* End of query. Data was then transferred into excel to explore. */
+
+
+
+
+</sql><current_tab id="0"/></tab_sql></sqlb_project>
