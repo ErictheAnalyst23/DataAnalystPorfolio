@@ -1,0 +1,112 @@
+/* The following queries will explore the dataset published by the Bureau of Infrastructure, Transport and Regional Economics in regards to key statistics about Australian Road Deaths.
+These queries will help clean the dataset and summarise information such as the number of deaths by state/year, gender, road users and remoteness of the crashes*/
+
+-- CheckPoint 1
+-- Combine the two tables together and decide which columns to use
+SELECT *
+FROM ARDDFatalCrashes
+INNER JOIN ARDDFatalities
+	ON ARDDFatalCrashes.Crash_ID = ARDDFatalities.ID;
+	
+--CheckPoint 2
+--Explore the changes in number of road fatalities by states	
+SELECT ARDDFatalCrashes.State, ARDDFatalCrashes.Year, SUM(ARDDFatalCrashes.'Number of Fatalities') AS Total_Fatalities
+FROM ARDDFatalCrashes
+INNER JOIN ARDDFatalities
+	ON ARDDFatalCrashes.Crash_ID = ARDDFatalities.ID
+GROUP BY ARDDFatalCrashes.State, ARDDFatalCrashes.Year, Gender
+ORDER BY ARDDFatalCrashes.State;
+
+-- Checkpoint 3
+-- Number of fatalities by remoteness
+-- Year 2014 - 2023, most fatalities in Inner Regional at 3737 then Major Cities at 3684
+-- Entries pre-2014 had null values for national remoteness area
+SELECT ARDDFatalCrashes.'National Remoteness Areas', 
+SUM(ARDDFatalCrashes.'Number of Fatalities') AS 'Number of Fatalities',
+ROUND(AVG(ARDDFatalities.Age), 2) AS 'Average Age'
+FROM ARDDFatalCrashes
+INNER JOIN ARDDFatalities
+	ON ARDDFatalCrashes.Crash_ID = ARDDFatalities.ID
+WHERE ARDDFatalCrashes.Year >= 2014
+GROUP BY ARDDFatalCrashes.'National Remoteness Areas'
+ORDER BY SUM(ARDDFatalCrashes.'Number of Fatalities') DESC;
+
+
+-- Checkpoint 4
+-- % of fatalities, # of fatalities by time of day and day of week
+SELECT ARDDFatalCrashes.'Day of week', ARDDFatalCrashes.'Time of Day',
+SUM(ARDDFatalCrashes.'Number of Fatalities') AS 'Number of Fatalities'
+FROM ARDDFatalCrashes
+INNER JOIN ARDDFatalities
+	ON ARDDFatalCrashes.Crash_ID = ARDDFatalities.ID
+WHERE ARDDFatalCrashes.Year >= 2014
+GROUP BY ARDDFatalCrashes.'Day of week', ARDDFatalCrashes.'Time of Day'
+ORDER BY ARDDFatalCrashes.Year;
+
+-- Checkpoint 5
+-- # of fatalities by road features
+SELECT CASE WHEN ARDDFatalCrashes.'National Road Type' = 'LOCAL ROAD' OR ARDDFatalCrashes.'National Road Type' = 'Local Road' THEN 'Local Road' 
+	WHEN ARDDFatalCrashes.'National Road Type' = 'ARTERIAL ROAD' OR ARDDFatalCrashes.'National Road Type' = 'Arterial Road' THEN 'Arterial Road'
+	WHEN ARDDFatalCrashes.'National Road Type' = 'NATIONAL OR STATE HIGHWAY' OR ARDDFatalCrashes.'National Road Type' = 'National or State Highway' THEN 'National or State Highway'
+	WHEN ARDDFatalCrashes.'National Road Type' = 'ACCESS ROAD' OR ARDDFatalCrashes.'National Road Type' = 'Access road' THEN 'Access Road'
+	ELSE ARDDFatalCrashes.'National Road Type' END AS 'National Road Type',
+SUM(ARDDFatalCrashes.'Number of Fatalities') AS 'Number of Fatalities'
+FROM ARDDFatalCrashes
+INNER JOIN ARDDFatalities
+	ON ARDDFatalCrashes.Crash_ID = ARDDFatalities.ID
+WHERE ARDDFatalCrashes.Year >= 2014
+GROUP BY 1;
+
+
+--CheckPoint 6
+--Explore the most vulnerable user groups.
+-- Gender, Road User and Age group	
+SELECT Gender, ARDDFatalities.'Road User', SUM(ARDDFatalCrashes.'Number of Fatalities') AS Total_Fatalities,
+CASE WHEN ARDDFatalities.'Age Group' = '0_to_16' THEN '0 to 16' 
+		WHEN ARDDFatalities.'Age Group' = '17_to_25' THEN '17 to 25'
+		WHEN ARDDFatalities.'Age Group' = '26_to_39' THEN '26 to 39'
+		WHEN ARDDFatalities.'Age Group' = '40_to_64' THEN '40 to 64'
+		WHEN ARDDFatalities.'Age Group' = '65_to_74' THEN '65 to 74'
+		WHEN ARDDFatalities.'Age Group' = '75_or_older' THEN '75 or older'
+		ELSE ARDDFatalities.'Age Group' END AS 'Age Groups'
+FROM ARDDFatalCrashes
+INNER JOIN ARDDFatalities
+	ON ARDDFatalCrashes.Crash_ID = ARDDFatalities.ID
+-- Filter out null values, in this case '-9'
+WHERE Gender != '-9' AND ARDDFatalities.'Age Group' != '-9' AND ARDDFatalities.'Road User' !='Other/-9' AND ARDDFatalCrashes.Year >= 2014
+GROUP BY Gender, ARDDFatalities.'Road User', ARDDFatalities.'Age Group'
+ORDER BY SUM(ARDDFatalCrashes.'Number of Fatalities') DESC;
+
+	
+	
+---- Combined Table will be used for Tableau Visualisation 
+SELECT ARDDFatalCrashes.Crash_ID, ARDDFatalCrashes.State, ARDDFatalCrashes.Month, ARDDFatalCrashes.Year, ARDDFatalCrashes.Month ||'/'|| ARDDFatalCrashes.Year AS 'Month-Year',
+ARDDFatalCrashes.Dayweek, 
+ARDDFatalCrashes.Time,
+ARDDFatalCrashes.'Crash Type', ARDDFatalCrashes.'Number of Fatalities',
+ARDDFatalCrashes.'Bus Involvement', ARDDFatalCrashes.'Heavy Rigid Truck Involvement', ARDDFatalCrashes.'Articulated Truck Involvement',
+ARDDFatalCrashes.'Speed Limit', ARDDFatalCrashes.'National Remoteness Areas', ARDDFatalCrashes.'SA4 Name 2021',
+ARDDFatalCrashes.'National LGA NAme 2021', 
+CASE WHEN ARDDFatalCrashes.'National Road Type' = 'LOCAL ROAD' OR ARDDFatalCrashes.'National Road Type' = 'Local Road' THEN 'Local Road' 
+	WHEN ARDDFatalCrashes.'National Road Type' = 'ARTERIAL ROAD' OR ARDDFatalCrashes.'National Road Type' = 'Arterial Road' THEN 'Arterial Road'
+	WHEN ARDDFatalCrashes.'National Road Type' = 'NATIONAL OR STATE HIGHWAY' OR ARDDFatalCrashes.'National Road Type' = 'National or State Highway' THEN 'National or State Highway'
+	WHEN ARDDFatalCrashes.'National Road Type' = 'ACCESS ROAD' OR ARDDFatalCrashes.'National Road Type' = 'Access road' THEN 'Access Road'
+	ELSE ARDDFatalCrashes.'National Road Type' END AS 'National Road Type', 
+ARDDFatalCrashes.'Christmas Period',
+ARDDFatalCrashes.'Easter Period', ARDDFatalCrashes.'Day of week', ARDDFatalCrashes.'Time of Day', 
+ARDDFatalities.'Road User', ARDDFatalities.Gender, ARDDFatalities.Age, 
+CASE WHEN ARDDFatalities.'Age Group' = '0_to_16' THEN '0 to 16' 
+		WHEN ARDDFatalities.'Age Group' = '17_to_25' THEN '17 to 25'
+		WHEN ARDDFatalities.'Age Group' = '26_to_39' THEN '26 to 39'
+		WHEN ARDDFatalities.'Age Group' = '40_to_64' THEN '40 to 64'
+		WHEN ARDDFatalities.'Age Group' = '65_to_74' THEN '65 to 74'
+		WHEN ARDDFatalities.'Age Group' = '75_or_older' THEN '75 or older'
+		ELSE ARDDFatalities.'Age Group' END AS 'Age Groups'
+FROM ARDDFatalCrashes
+INNER JOIN ARDDFatalities
+	ON ARDDFatalCrashes.Crash_ID = ARDDFatalities.ID
+WHERE ARDDFatalCrashes.Year >= 2014
+ORDER BY ARDDFatalCrashes.Month AND ARDDFatalCrashes.Year;
+
+
+/* Using the findings from these quries, I will visualise the data using Tableau.*/
