@@ -1,0 +1,109 @@
+/* The following queries explores the academic records and achievements of students (note: the dataset is not real). 
+The queries will clean the dataset, aggregate the results and also allocate grades to each student.*/
+
+-- Checkpoint 1
+-- Cleaning the dataset to allocate scores with a grade and combining the highest education level of parents into three distinct groups.
+With student_performance (student_id, gender, ethnicity, parent_education_level, lunch_benefit, test_revision_assistance, 
+	math_score, math_grade, reading_score, reading_grade, writing_score, writing_grade, overall_score)
+AS
+(SELECT student_id, 
+upper(substr(gender, 1, 1))||substr(gender, 2), 
+upper(substr(ethnicity, 1, 1))||substr(ethnicity, 2), 
+(CASE WHEN parent_education = 'some high school' OR parent_education = 'high school' THEN 'High School Diploma'
+	WHEN parent_education = "associate's degree" OR parent_education = "bachelor's degree" OR parent_education = 'some college' THEN 'Undergraduate Degree'
+	WHEN parent_education = "master's degree" THEN 'Postgraduate Degree'
+	ELSE NULL END) AS parent_education_level,
+(CASE WHEN lunch = 'standard' THEN 'Full Price'
+	ELSE 'Discounted' END) AS lunch_benefit, 
+	(CASE WHEN test_revision = 'completed' THEN 'Participated'
+	ELSE 'Did Not Participate' END) AS test_revision_assistance,
+math_score, 
+(CASE WHEN math_score >= 85 THEN 'A' 
+	WHEN math_score >= 70 THEN 'B'
+	WHEN math_score >= 55 THEN 'C'
+	WHEN math_score >= 40 THEN 'D'
+	WHEN math_score >= 25 THEN 'E'
+	ELSE 'F' END) AS math_grade,
+reading_score, 
+(CASE WHEN reading_score >= 85 THEN 'A' 
+	WHEN reading_score >= 70 THEN 'B'
+	WHEN reading_score >= 55 THEN 'C'
+	WHEN reading_score >= 40 THEN 'D'
+	WHEN reading_score >= 25 THEN 'E'
+	ELSE 'F' END) AS reading_grade,
+writing_score,
+(CASE WHEN writing_score >= 85 THEN 'A' 
+	WHEN writing_score >= 70 THEN 'B'
+	WHEN writing_score >= 55 THEN 'C'
+	WHEN writing_score >= 40 THEN 'D'
+	WHEN writing_score >= 25 THEN 'E'
+	ELSE 'F' END) AS writing_grade,
+ROUND((math_score + reading_score + writing_score)/3) AS overall_score
+FROM exams)
+
+SELECT *,
+(CASE WHEN overall_score >= 85 THEN 'A' 
+	WHEN overall_score >= 70 THEN 'B'
+	WHEN overall_score >= 55 THEN 'C'
+	WHEN overall_score >= 40 THEN 'D'
+	WHEN overall_score >= 25 THEN 'E'
+	ELSE 'F' END) AS overall_grade
+FROM student_performance;
+
+---- Aggregates
+With student_performance (student_id, gender, ethnicity, parent_education_level, lunch_benefit, test_revision_assistance, 
+	math_score, math_grade, reading_score, reading_grade, writing_score, writing_grade, overall_score)
+AS
+(SELECT student_id, 
+upper(substr(gender, 1, 1))||substr(gender, 2), 
+upper(substr(ethnicity, 1, 1))||substr(ethnicity, 2), 
+(CASE WHEN parent_education = 'some high school' OR parent_education = 'high school' THEN 'High School Diploma'
+	WHEN parent_education = "associate's degree" OR parent_education = "bachelor's degree" OR parent_education = 'some college' THEN 'Undergraduate Degree'
+	WHEN parent_education = "master's degree" THEN 'Postgraduate Degree'
+	ELSE NULL END) AS parent_education_level,
+(CASE WHEN lunch = 'standard' THEN 'Full Price'
+	ELSE 'Discounted' END) AS lunch_benefit, 
+	(CASE WHEN test_revision = 'completed' THEN 'Participated'
+	ELSE 'Did Not Participate' END) AS test_revision_assistance,
+math_score, 
+(CASE WHEN math_score >= 85 THEN 'A' 
+	WHEN math_score >= 70 THEN 'B'
+	WHEN math_score >= 55 THEN 'C'
+	WHEN math_score >= 40 THEN 'D'
+	WHEN math_score >= 25 THEN 'E'
+	ELSE 'F' END) AS math_grade,
+reading_score, 
+(CASE WHEN reading_score >= 85 THEN 'A' 
+	WHEN reading_score >= 70 THEN 'B'
+	WHEN reading_score >= 55 THEN 'C'
+	WHEN reading_score >= 40 THEN 'D'
+	WHEN reading_score >= 25 THEN 'E'
+	ELSE 'F' END) AS reading_grade,
+writing_score,
+(CASE WHEN writing_score >= 85 THEN 'A' 
+	WHEN writing_score >= 70 THEN 'B'
+	WHEN writing_score >= 55 THEN 'C'
+	WHEN writing_score >= 40 THEN 'D'
+	WHEN writing_score >= 25 THEN 'E'
+	ELSE 'F' END) AS writing_grade,
+ROUND((math_score + reading_score + writing_score)/3) AS overall_score
+FROM exams)
+
+SELECT gender, parent_education_level, ethnicity, lunch_benefit, test_revision_assistance,
+ROUND(AVG(math_score), 1) AS 'Average Math Score', 
+ROUND(AVG(reading_score), 1) AS 'Average Reading Score', 
+ROUND(AVG(writing_score), 1) AS 'Average Writing Score', 
+ROUND(AVG(overall_score), 1) AS 'Average Overall Score'
+FROM student_performance
+GROUP BY gender, parent_education_level, ethnicity, lunch_benefit, test_revision_assistance
+ORDER BY ROUND(AVG(overall_score), 1) DESC;
+
+/* The query was completed on Sqlite. The information acquired from this investigation was visualised in Tableau.
+
+Link to Tableau Dashboard:
+https://public.tableau.com/app/profile/eric.wong8260/viz/Howtoimprovestudentsacademics/D1Factorsforacademicsuccess1
+
+The original csv file was taken from:
+http://roycekimmons.com/tools/generated_data/exams
+
+Thank you for reading. */
