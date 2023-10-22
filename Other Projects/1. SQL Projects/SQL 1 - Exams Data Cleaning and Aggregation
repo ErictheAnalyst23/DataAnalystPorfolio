@@ -3,6 +3,7 @@ The queries will clean the dataset, aggregate the results and also allocate grad
 
 -- Checkpoint 1
 -- Cleaning the dataset to allocate scores with a grade and combining the highest education level of parents into three distinct groups.
+
 With student_performance (student_id, gender, ethnicity, parent_education_level, lunch_benefit, test_revision_assistance, 
 	math_score, math_grade, reading_score, reading_grade, writing_score, writing_grade, overall_score)
 AS
@@ -50,7 +51,10 @@ SELECT *,
 	ELSE 'F' END) AS overall_grade
 FROM student_performance;
 
----- Aggregates
+
+---- Checkpoint 2
+-- The following section will aggregate the average scores of the students. This aims to identify the highest achieving group at this school and the lowest achieving. 
+
 With student_performance (student_id, gender, ethnicity, parent_education_level, lunch_benefit, test_revision_assistance, 
 	math_score, math_grade, reading_score, reading_grade, writing_score, writing_grade, overall_score)
 AS
