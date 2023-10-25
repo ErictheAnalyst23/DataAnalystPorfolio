@@ -13,11 +13,10 @@ The dataset was published by the Bureau of Infrastructure, Transport and Regiona
 
 
 ## Steps Taken
-## 1) Cleaning the data on Sqlite:
-https://github.com/ErictheAnalyst23/DataAnalystPorfolio/blob/main/Project%203%20-%20Australian%20Road%20Fatalities%20/1.%20SQL%20Cleaning%20Dataset
+### 1) Cleaning the data on Sqlite:
+[https://github.com/ErictheAnalyst23/DataAnalystPorfolio/blob/main/Project%203%20-%20Australian%20Road%20Fatalities%20/1.%20SQL%20Cleaning%20Dataset
+](https://github.com/ErictheAnalyst23/DataAnalystPorfolio/blob/main/Project%203%20-%20Australian%20Road%20Fatalities/1.%20SQL%20Cleaning%20-%20Australia%20Road%20Fatalities)
 
-## 2) Visualising the findings on Tableau
+### 2) Visualising the findings on Tableau
 https://public.tableau.com/app/profile/eric.wong8260/viz/AustraliaRoadDeathsDashboard/Dashboard2
 
-## Visualising the dataset using Tableau
-(https://public.tableau.com/app/profile/eric.wong8260/viz/CovidVaccinationTracker_16849971901100/Dashboard1)https://public.tableau.com/app/profile/eric.wong8260/viz/CovidVaccinationTracker_16849971901100/Dashboard1
