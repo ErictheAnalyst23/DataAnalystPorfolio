@@ -109,4 +109,9 @@ WHERE ARDDFatalCrashes.Year >= 2014
 ORDER BY ARDDFatalCrashes.Month AND ARDDFatalCrashes.Year;
 
 
-/* Using the findings from these quries, I will visualise the data using Tableau.*/
+/* The knowledge gained through these SQL queries was further visualised in Tableau.
+
+Link:
+https://public.tableau.com/app/profile/eric.wong8260/viz/AustraliaRoadDeathsDashboard/Dashboard2
+
+*/
