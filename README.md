@@ -21,8 +21,13 @@ Side Project 1: SQL
 
 Side Project 2: Python
 
-Side Project 3: Web Scrape
+Side Project 3: Tableau 
+https://public.tableau.com/app/profile/eric.wong8260/vizzes
 
-Side Project 4: R
+Side Project 4: Web Scrape
 
-Side Project 5: Excel and Power BI
+Side Project 5: R
+
+Side Project 6: Excel and Power BI
+
+
